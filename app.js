@@ -1,20 +1,17 @@
-var express = require('express');
-var app = express();
-var path = require('path');
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
 
-app.use(express.static(path.join(__dirname)));
-app.use("/styles", express.static(__dirname));
-app.use("/images", express.static(__dirname + '/images'));
-app.use("/scripts", express.static(__dirname + '/scripts'));
+const app = express();
+const port = process.env.HOST_PORT || 3000;
 
+app.use(cors());
+app.use(express.json());
 
-app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname + 'views/index.html'));
+const authRouter = require('./routes/auth_router');
+
+app.use('/auth', authRouter);
+
+app.listen(port, () => {
+    console.log(`Server is ready to work on port ${port}!`);
 });
-
-
-app.get('/about', function (req, res) {
-    res.sendFile(path.join(__dirname + 'views/about.html'));
-});
-
-app.listen(process.env.PORT || 8080);
