@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require("uuid");
 const { err_res, success_res } = require("../services/service");
 const { users, checkIsUserExist, checkUserExistence } = require("../store");
 
-const createUser = async (req, res) => {
+const createUser = (req, res) => {
     const params = req.body;
     if (!params.name || !params.email || !params.password) {
         return err_res(res, 'Invalid params');
@@ -17,7 +17,7 @@ const createUser = async (req, res) => {
         users[userId] = { name, email, password };
         return success_res(res);
     } catch(e) {
-        if (e === 'exist_account') {
+        if (e.message === 'exist_account') {
             return err_res(res, 'Account already exist');
         } else {
             return err_res(res, 'Error on registration');
@@ -25,7 +25,8 @@ const createUser = async (req, res) => {
     }
 }
 
-const login = async (req, res) => {
+const login = (req, res) => {
+    let userId;
     const params = req.body;
     if (!params.email || !params.password) {
         return err_res(res);
@@ -37,20 +38,31 @@ const login = async (req, res) => {
         }
         checkUserExistence(email, password);
 
-        return success_res(res);
-    } catch(e) {
-        if (e === 'invalid_email') {
-            return err_res(res, 'Invalid email');
+        for(let key of Object.keys(users)) {
+            if (users[key].email === email) {
+                userId = key;
+                break;
+            }
         }
-        if (e === 'invalid_password'){
-            return err_res(res, 'Invalid password');
+
+        return success_res(res, userId);
+    } catch(e) {
+        if (e.message === 'invalid_user') {
+            return err_res(res, 'Invalid email or password');
         }
         return err_res(res, 'Error on login');
     }
 }
 
 const getUsers = (req, res) => {
-    return success_res(res, users);
+    const usersList = [];
+
+    Object.keys(users).forEach(userId => {
+        users[userId].id = userId;
+        usersList.push(users[userId])
+    });
+
+    return success_res(res, usersList);
 }
 
 

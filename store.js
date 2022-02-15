@@ -10,14 +10,16 @@ const checkIsUserExist = (email) => {
 }
 
 const checkUserExistence = (email, password) => {
-    Object.keys(users).forEach(userId => {
-        if (users[userId].email !== email) {
-            throw new Error('invalid_email');
+    let isUserExist = false;
+    for(let value of Object.values(users)) {
+        if (value.email === email && value.password === password) {
+            isUserExist = true;
+         break;
         }
-        if (users[userId].password !== password) {
-            throw new Error('invalid_password');
-        }
-    });
+    }
+    if (!isUserExist) {
+        throw new Error('invalid_user');
+    }
 }
 
 module.exports = {

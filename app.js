@@ -9,8 +9,10 @@ app.use(cors());
 app.use(express.json());
 
 const authRouter = require('./routes/auth_router');
+const conversationRouter = require('./routes/conversation_router');
 
 app.use('/auth', authRouter);
+app.use('/conversation', conversationRouter);
 
 app.listen(port, () => {
     console.log(`Server is ready to work on port ${port}!`);
