@@ -14,7 +14,7 @@ const createUser = (req, res) => {
         }
         checkIsUserExist(email);
         const userId = uuidv4();
-        users[userId] = { name, email, password };
+        users[userId] = { id: userId, name, email, password };
         return success_res(res);
     } catch(e) {
         if (e.message === 'exist_account') {
@@ -58,7 +58,6 @@ const getUsers = (req, res) => {
     const usersList = [];
 
     Object.keys(users).forEach(userId => {
-        users[userId].id = userId;
         usersList.push(users[userId])
     });
 

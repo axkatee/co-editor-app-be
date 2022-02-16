@@ -9,5 +9,6 @@ router.post('/mutations', conversationCtrl.editConversation);
 router.delete('/', conversationCtrl.deleteConversation);
 router.get('/info', conversationCtrl.getInfoAboutConversation);
 router.post('/add-user', conversationCtrl.addUserToConversation);
+router.post('/favorite', conversationCtrl.changeFavoriteState);
 
 module.exports = router;
