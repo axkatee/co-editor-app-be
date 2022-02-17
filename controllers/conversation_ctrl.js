@@ -3,13 +3,9 @@ const { conversations, users } = require("../store");
 const { v4: uuidv4 } = require("uuid");
 const cloneDeep = require('lodash.clonedeep')
 
-const getConversations = (req, res) => {
+const findConversations = (userId) => {
     let listOfFavoriteConversations = [];
     let listOfUnfavoriteConversations = [];
-    const userId = req.query.userId;
-    if (!userId) {
-        return err_res(res);
-    }
 
     Object.keys(conversations).forEach(id => {
         let contributorsIds = conversations[id].contributors.map(user => user.id);
@@ -25,7 +21,16 @@ const getConversations = (req, res) => {
         }
     });
 
-    return success_res(res, { listOfFavoriteConversations, listOfUnfavoriteConversations });
+    return { listOfFavoriteConversations, listOfUnfavoriteConversations };
+}
+
+const getConversations = (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) {
+        return err_res(res);
+    }
+    const conversationsForUser = findConversations(userId);
+    return success_res(res, conversationsForUser);
 }
 
 const getInfoAboutConversation = (req, res) => {
@@ -56,7 +61,8 @@ const createConversation = (req, res) => {
         const conversationId = uuidv4();
         conversations[conversationId] = { id: conversationId, name, author: user, mutations: [], text: '', contributors: [] };
 
-        return success_res(res, conversations[conversationId]);
+        const conversationsForUser = findConversations(author);
+        return success_res(res, conversationsForUser);
     } catch(e) {
         return err_res(res, 'Error on create conversation');
     }
@@ -84,7 +90,8 @@ const editConversation = (req, res) => {
 
         conversations[conversationId].text = text;
 
-        return success_res(res, conversations[conversationId]);
+        const conversationsForUser = findConversations(userId);
+        return success_res(res, conversationsForUser);
     } catch(e) {
         return err_res(res, 'Error on edit conversation');
     }
@@ -102,7 +109,8 @@ const deleteConversation = (req, res) => {
 
     try {
         delete conversations[conversationId];
-        return success_res(res, conversations);
+        const conversationsForUser = findConversations(author);
+        return success_res(res, conversationsForUser);
     } catch(e) {
         return err_res(res, 'Error on delete conversation');
     }
@@ -122,7 +130,8 @@ const addUserToConversation = (req, res) => {
         invitedUser.isFavorite = false;
         conversations[conversationId].contributors.push(invitedUser);
 
-        return success_res(res, conversations[conversationId]);
+        const conversationsForUser = findConversations(author);
+        return success_res(res, conversationsForUser);
     } catch (e) {
         return err_res(res, 'Error on add user to conversation');
     }
@@ -144,9 +153,9 @@ const changeFavoriteState = (req, res) => {
                 }
             });
         }
-        console.log(conversations)
 
-        return success_res(res, conversations[conversationId]);
+        const conversationsForUser = findConversations(userId);
+        return success_res(res, conversationsForUser);
     } catch (e) {
         return err_res(res, 'Error on add user to conversation');
     }
