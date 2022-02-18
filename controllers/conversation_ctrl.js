@@ -1,118 +1,82 @@
-const { err_res, success_res } = require("../services/service");
-const { conversations, users } = require("../store");
-const { v4: uuidv4 } = require("uuid");
-const cloneDeep = require('lodash.clonedeep')
-
-const findConversations = (userId) => {
-    let listOfFavoriteConversations = [];
-    let listOfUnfavoriteConversations = [];
-
-    Object.keys(conversations).forEach(id => {
-        let contributorsIds = conversations[id].contributors.map(user => user.id);
-        if (conversations[id].author.id === userId) {
-            conversations[id].author.isFavorite
-                ? listOfFavoriteConversations.push(conversations[id])
-                : listOfUnfavoriteConversations.push(conversations[id])
-        } else if (contributorsIds.includes(userId)) {
-            const user = conversations[id].contributors.find(user => user.id === userId);
-            user.isFavorite
-                ? listOfFavoriteConversations.push(conversations[id])
-                : listOfUnfavoriteConversations.push(conversations[id])
-        }
-    });
-
-    return { listOfFavoriteConversations, listOfUnfavoriteConversations };
-}
+const { conversations } = require("../store");
+const {
+    changeConversationFavoriteStateInStore,
+    editConversationInStore,
+    createConversationInStore,
+    inviteUserToConversation
+} = require("../services/store-service");
+const { send_response } = require("../services/service");
+const socketClient = require("../services/socket-client");
 
 const getConversations = (req, res) => {
     const userId = req.query.userId;
     if (!userId) {
-        return err_res(res);
+        return send_response(400, res, 'Invalid params');
     }
-    const conversationsForUser = findConversations(userId);
-    return success_res(res, conversationsForUser);
+
+    socketClient.sendConversationsData(conversations);
+    return send_response(200, res, conversations);
 }
 
 const getInfoAboutConversation = (req, res) => {
     const { conversationId } = req.query;
     if (!conversationId) {
-        return err_res(res);
+        return send_response(400, res, 'Invalid params');
     }
-    return success_res(res, conversations[conversationId]);
+    return send_response(200, res, conversations[conversationId]);
 }
 
 const createConversation = (req, res) => {
-    let user = {};
     const params = req.body;
     if (!params.name || !params.author) {
-        return err_res(res);
+        return send_response(400, res, 'Invalid params');
     }
     try {
         const { name, author } = params;
 
-        Object.keys(users).forEach(userId => {
-            if (userId === author) {
-                user = cloneDeep(users[userId]);
-                user.isFavorite = false;
-                delete user.password;
-            }
-        });
+        createConversationInStore(author, name);
 
-        const conversationId = uuidv4();
-        conversations[conversationId] = { id: conversationId, name, author: user, mutations: [], text: '', contributors: [] };
-
-        const conversationsForUser = findConversations(author);
-        return success_res(res, conversationsForUser);
+        socketClient.sendConversationsData(conversations);
+        return send_response(200, res, conversations);
     } catch(e) {
-        return err_res(res, 'Error on create conversation');
+        return send_response(500, res, 'Error on create conversation');
     }
 }
 
 const editConversation = (req, res) => {
     const params = req.body;
     if (!params.conversationId || !params.text || !params.userId) {
-        return err_res(res);
+        return send_response(400, res, 'Invalid params');
     }
     try {
         const { conversationId, text, userId } = params;
 
-        conversations[conversationId].mutations.forEach(mutation => {
-            if (mutation.userId === userId) {
-                mutation.countOfMutations += 1;
-            }
-        });
+        editConversationInStore(conversationId, userId, text);
 
-        const userIdsInMutations = conversations[conversationId].mutations.map(mutation => mutation.userId);
-
-        if (!userIdsInMutations.includes(userId)) {
-            conversations[conversationId].mutations.push({ userId, countOfMutations: 1 });
-        }
-
-        conversations[conversationId].text = text;
-
-        const conversationsForUser = findConversations(userId);
-        return success_res(res, conversationsForUser);
+        socketClient.sendConversationsData(conversations);
+        return send_response(201, res, conversations);
     } catch(e) {
-        return err_res(res, 'Error on edit conversation');
+        return send_response(500, res, 'Error on edit conversation');
     }
 }
 
 const deleteConversation = (req, res) => {
     const { conversationId, author } = req.query;
     if (!conversationId) {
-        return err_res(res);
+        return send_response(400, res, 'Invalid params');
     }
 
     if (conversations[conversationId].author.id !== author) {
-        return err_res(res, 'Permission denied');
+        return send_response(400, res, 'Permission denied');
     }
 
     try {
         delete conversations[conversationId];
-        const conversationsForUser = findConversations(author);
-        return success_res(res, conversationsForUser);
+
+        socketClient.sendConversationsData(conversations);
+        return send_response(200, res, conversations);
     } catch(e) {
-        return err_res(res, 'Error on delete conversation');
+        return send_response(500, res, 'Error on delete conversation');
     }
 }
 
@@ -120,20 +84,19 @@ const addUserToConversation = (req, res) => {
     const { conversationId, author, invitedUser } = req.body;
     try {
         if (!conversationId || !author || !invitedUser) {
-            return err_res(res);
+            return send_response(400, res, 'Invalid params');
         }
 
         if (conversations[conversationId].author.id !== author) {
-            return err_res(res, 'Permission denied');
+            return send_response(400, res, 'Permission denied');
         }
 
-        invitedUser.isFavorite = false;
-        conversations[conversationId].contributors.push(invitedUser);
+        inviteUserToConversation(invitedUser, conversationId);
 
-        const conversationsForUser = findConversations(author);
-        return success_res(res, conversationsForUser);
+        socketClient.sendConversationsData(conversations);
+        return send_response(200, res, conversations);
     } catch (e) {
-        return err_res(res, 'Error on add user to conversation');
+        return send_response(500, res, 'Error on add user to conversation');
     }
 }
 
@@ -141,23 +104,14 @@ const changeFavoriteState = (req, res) => {
     const { conversationId, userId, isFavorite } = req.body;
     try {
         if (!conversationId || !userId) {
-            return err_res(res);
+            return send_response(400, res, 'Invalid params');
         }
+        changeConversationFavoriteStateInStore(conversationId, userId, isFavorite);
 
-        if (conversations[conversationId].author.id === userId) {
-            conversations[conversationId].author.isFavorite = isFavorite;
-        } else {
-            conversations[conversationId].contributors.forEach(user => {
-                if (user.id === userId) {
-                    user.isFavorite = isFavorite;
-                }
-            });
-        }
-
-        const conversationsForUser = findConversations(userId);
-        return success_res(res, conversationsForUser);
+        socketClient.sendConversationsData(conversations);
+        return send_response(200, res, conversations);
     } catch (e) {
-        return err_res(res, 'Error on add user to conversation');
+        return send_response(500, res, 'Error on add user to conversation');
     }
 }
 

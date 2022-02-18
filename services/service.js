@@ -1,8 +1,3 @@
-const err_res = (res, message) => res.status(400).send({ ok: false, message: message || null });
+const send_response = (statusCode, res, message) => res.status(statusCode).send({ ok: true, message: message || null });
 
-const success_res = (res, message) => res.status(200).send({ ok: true, message: message || null });
-
-module.exports = {
-    err_res,
-    success_res
-}
+module.exports = { send_response }
