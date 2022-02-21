@@ -6,7 +6,8 @@ require('dotenv').config();
 const port = process.env.PORT || 3000;
 
 const app = express();
-app.use(express.json());
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb'}));
 app.use(cors());
 
 const http = require('http').createServer(app);

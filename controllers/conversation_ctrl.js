@@ -14,7 +14,6 @@ const getConversations = (req, res) => {
         return send_response(400, res, 'Invalid params');
     }
 
-    socketClient.sendConversationsData(conversations);
     return send_response(200, res, conversations);
 }
 
@@ -34,10 +33,9 @@ const createConversation = (req, res) => {
     try {
         const { name, author } = params;
 
-        createConversationInStore(author, name);
+        const newConversation = createConversationInStore(author, name);
 
-        socketClient.sendConversationsData(conversations);
-        return send_response(200, res, conversations);
+        return send_response(200, res, newConversation);
     } catch(e) {
         return send_response(500, res, 'Error on create conversation');
     }
@@ -45,16 +43,16 @@ const createConversation = (req, res) => {
 
 const editConversation = (req, res) => {
     const params = req.body;
-    if (!params.conversationId || !params.text || !params.userId) {
+    if (!params.conversationId || !params.userId) {
         return send_response(400, res, 'Invalid params');
     }
     try {
         const { conversationId, text, userId } = params;
 
-        editConversationInStore(conversationId, userId, text);
+        editConversationInStore(conversationId, userId, text || '');
 
-        socketClient.sendConversationsData(conversations);
-        return send_response(201, res, conversations);
+        socketClient.sendConversationData(conversations[conversationId]);
+        return send_response(201, res, conversations[conversationId]);
     } catch(e) {
         return send_response(500, res, 'Error on edit conversation');
     }
@@ -73,8 +71,8 @@ const deleteConversation = (req, res) => {
     try {
         delete conversations[conversationId];
 
-        socketClient.sendConversationsData(conversations);
-        return send_response(200, res, conversations);
+        socketClient.deleteConversationData(conversationId);
+        return send_response(200, res);
     } catch(e) {
         return send_response(500, res, 'Error on delete conversation');
     }
@@ -93,8 +91,8 @@ const addUserToConversation = (req, res) => {
 
         inviteUserToConversation(invitedUser, conversationId);
 
-        socketClient.sendConversationsData(conversations);
-        return send_response(200, res, conversations);
+        socketClient.sendConversationData(conversations[conversationId]);
+        return send_response(200, res, conversations[conversationId]);
     } catch (e) {
         return send_response(500, res, 'Error on add user to conversation');
     }
@@ -108,8 +106,7 @@ const changeFavoriteState = (req, res) => {
         }
         changeConversationFavoriteStateInStore(conversationId, userId, isFavorite);
 
-        socketClient.sendConversationsData(conversations);
-        return send_response(200, res, conversations);
+        return send_response(200, res, conversations[conversationId]);
     } catch (e) {
         return send_response(500, res, 'Error on add user to conversation');
     }

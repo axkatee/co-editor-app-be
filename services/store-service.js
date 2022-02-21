@@ -70,6 +70,7 @@ const createConversationInStore = (author, name) => {
 
     const conversationId = uuidv4();
     conversations[conversationId] = { id: conversationId, name, author: user, mutations: [], text: '', contributors: [] };
+    return conversations[conversationId];
 }
 
 const inviteUserToConversation = (invitedUser, conversationId) => {
