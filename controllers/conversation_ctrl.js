@@ -3,7 +3,8 @@ const {
     changeConversationFavoriteStateInStore,
     editConversationInStore,
     createConversationInStore,
-    inviteUserToConversation
+    inviteUserToConversation,
+    getConversationsFromStore
 } = require("../services/store-service");
 const { send_response } = require("../services/service");
 const socketClient = require("../services/socket-client");
@@ -13,8 +14,9 @@ const getConversations = (req, res) => {
     if (!userId) {
         return send_response(400, res, 'Invalid params');
     }
+    const conversationsFromStore = getConversationsFromStore();
 
-    return send_response(200, res, conversations);
+    return send_response(200, res, conversationsFromStore);
 }
 
 const getInfoAboutConversation = (req, res) => {

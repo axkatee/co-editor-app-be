@@ -1,5 +1,5 @@
-const { v4: uuidv4 } = require("uuid");
 const cloneDeep = require("lodash.clonedeep");
+const { v4: uuidv4 } = require("uuid");
 const { users, conversations } = require("../store");
 
 
@@ -28,6 +28,14 @@ const loginUser = (email, password) => {
         throw new Error('invalid_user');
     }
     return userId;
+}
+
+const getConversationsFromStore = () => {
+    let clonedConversations = cloneDeep(conversations);
+    Object.keys(conversations).forEach(key => {
+        delete clonedConversations[key].text;
+    });
+    return clonedConversations;
 }
 
 const changeConversationFavoriteStateInStore = (conversationId, userId, isFavorite) => {
@@ -81,6 +89,7 @@ const inviteUserToConversation = (invitedUser, conversationId) => {
 module.exports = {
     createUserInStore,
     loginUser,
+    getConversationsFromStore,
     changeConversationFavoriteStateInStore,
     editConversationInStore,
     createConversationInStore,
