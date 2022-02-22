@@ -5,8 +5,8 @@ const { users, conversations } = require("../store");
 
 
 const createUserInStore = (name, email, password) => {
-    Object.keys(users).forEach(userId => {
-        if (users[userId].email === email) {
+    Object.values(users).forEach(value => {
+        if (value.email === email) {
             throw new Error('exist_account');
         }
     });
@@ -51,17 +51,8 @@ const changeConversationFavoriteStateInStore = (conversationId, userId, isFavori
 }
 
 const editConversationInStore = (conversationId, userId, text) => {
-    conversations[conversationId].mutations.forEach(mutation => {
-        if (mutation.userId === userId) {
-            mutation.countOfMutations += 1;
-        }
-    });
-
-    const userIdsInMutations = conversations[conversationId].mutations.map(mutation => mutation.userId);
-
-    if (!userIdsInMutations.includes(userId)) {
-        conversations[conversationId].mutations.push({ userId, countOfMutations: 1 });
-    }
+    conversations[conversationId].mutations[userId] = conversations[conversationId].mutations[userId]
+        ? ++conversations[conversationId].mutations[userId] : 1;
 
     conversations[conversationId].text = text;
 }
@@ -77,7 +68,7 @@ const createConversationInStore = (author, name) => {
     });
 
     const conversationId = uuidv4();
-    conversations[conversationId] = { id: conversationId, name, author: user, mutations: [], text: '', contributors: [] };
+    conversations[conversationId] = { id: conversationId, name, author: user, mutations: {}, text: '', contributors: [] };
     return conversations[conversationId];
 }
 

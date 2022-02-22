@@ -5,9 +5,9 @@ const {
     createConversationInStore,
     inviteUserToConversation,
     getConversationsFromStore
-} = require("../services/store-service");
-const { send_response } = require("../services/service");
-const socketClient = require("../services/socket-client");
+} = require("../services/store_service");
+const { send_response } = require("../services/response_service");
+const socketClient = require("../services/socket_client");
 
 const getConversations = (req, res) => {
     const userId = req.query.userId;
@@ -28,13 +28,11 @@ const getInfoAboutConversation = (req, res) => {
 }
 
 const createConversation = (req, res) => {
-    const params = req.body;
-    if (!params.name || !params.author) {
+    const { name, author } = req.body;
+    if (!name || !author) {
         return send_response(400, res, 'Invalid params');
     }
     try {
-        const { name, author } = params;
-
         const newConversation = createConversationInStore(author, name);
 
         return send_response(200, res, newConversation);
@@ -44,13 +42,11 @@ const createConversation = (req, res) => {
 }
 
 const editConversation = (req, res) => {
-    const params = req.body;
-    if (!params.conversationId || !params.userId) {
+    const { conversationId, userId, text } = req.body;
+    if (!conversationId || !userId) {
         return send_response(400, res, 'Invalid params');
     }
     try {
-        const { conversationId, text, userId } = params;
-
         editConversationInStore(conversationId, userId, text || '');
 
         socketClient.sendConversationData(conversations[conversationId]);

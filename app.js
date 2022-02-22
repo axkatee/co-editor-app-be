@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const socket = require('./services/socket-service');
+const socket = require('./services/socket_server');
 require('dotenv').config();
 
 const port = process.env.PORT || 3000;

@@ -1,14 +1,13 @@
-const { send_response } = require("../services/service");
+const { send_response } = require("../services/response_service");
 const { users } = require("../store");
-const { createUserInStore, loginUser } = require("../services/store-service");
+const { createUserInStore, loginUser } = require("../services/store_service");
 
 const createUser = (req, res) => {
-    const params = req.body;
-    if (!params.name || !params.email || !params.password) {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
         return send_response(400, res, 'Invalid params');
     }
     try {
-        const { name, email, password } = params;
         if (name.length < 4 || email.length < 4 || password.length < 4) {
             return send_response(400, res, 'Invalid params');
         }
@@ -25,12 +24,11 @@ const createUser = (req, res) => {
 }
 
 const login = (req, res) => {
-    const params = req.body;
-    if (!params.email || !params.password) {
+    const { email, password } = req.query;
+    if (!email || !password) {
         return send_response(400, res, 'Invalid params');
     }
     try {
-        const { email, password } = params;
         if (email.length < 4 || password.length < 4) {
             return send_response(400, res, 'Invalid params');
         }
